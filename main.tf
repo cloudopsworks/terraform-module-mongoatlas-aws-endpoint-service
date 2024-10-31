@@ -38,13 +38,13 @@ resource "aws_security_group_rule" "default_ingress" {
 }
 
 resource "aws_vpc_endpoint" "this" {
-  vpc_id             = var.vpc.vpc_id
-  service_name       = data.mongodbatlas_privatelink_endpoint.this.endpoint_service_name
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = var.vpc.subnet_ids
-  security_group_ids = concat(local.sglist, [aws_security_group.default.id])
+  vpc_id              = var.vpc.vpc_id
+  service_name        = data.mongodbatlas_privatelink_endpoint.this.endpoint_service_name
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.vpc.subnet_ids
+  security_group_ids  = concat(local.sglist, [aws_security_group.default.id])
+  private_dns_enabled = try(var.settings.private_dns, false)
   dns_options {
-    private_dns_name                               = try(var.settings.private_dns, false) ? "enabled" : "disabled"
     dns_record_ip_type                             = try(var.settings.dns_record_ip_type, "service-defined")
     private_dns_only_for_inbound_resolver_endpoint = try(var.settings.private_resolver, false) ? "enabled" : "disabled"
   }
