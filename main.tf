@@ -52,6 +52,7 @@ resource "aws_vpc_endpoint" "this" {
   subnet_ids          = var.vpc.subnet_ids
   security_group_ids  = concat(local.sglist, [aws_security_group.default.id])
   private_dns_enabled = try(var.settings.private_dns, false)
+  auto_accept         = true
   dynamic "dns_options" {
     for_each = length(try(var.settings.options, {})) > 0 ? [var.settings.options] : []
     content {
