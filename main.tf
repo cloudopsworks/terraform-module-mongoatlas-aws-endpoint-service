@@ -44,8 +44,8 @@ resource "aws_security_group_rule" "default_ingress" {
   security_group_id = aws_security_group.default.id
   type              = "ingress"
   protocol          = "TCP"
-  from_port         = try(var.settings.port, 27017)
-  to_port           = try(var.settings.port, 27017)
+  from_port         = try(var.settings.port, 1024)
+  to_port           = try(var.settings.port, 65535)
   cidr_blocks       = concat(try(var.settings.vpc_cidr_blocks, []), [var.vpc.vpc_cidr_block])
 }
 
