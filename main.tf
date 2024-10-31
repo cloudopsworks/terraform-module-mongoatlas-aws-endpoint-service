@@ -20,11 +20,13 @@ data "mongodbatlas_privatelink_endpoint" "this" {
 }
 
 resource "aws_security_group" "default" {
-  vpc_id = var.vpc.vpc_id
-  name   = "mongodb-ep-${local.system_name}-sg"
+  vpc_id      = var.vpc.vpc_id
+  name        = "mongodb-ep-${local.system_name}-sg"
+  description = "Security Group for MongoDB Atlas Private Link"
 
   # Egress all
   egress {
+    description = "Allow all traffic out"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -42,6 +44,7 @@ resource "aws_security_group" "default" {
 
 resource "aws_security_group_rule" "default_ingress" {
   security_group_id = aws_security_group.default.id
+  description       = "Allow Traffic for MongoDB Atlas"
   type              = "ingress"
   protocol          = "TCP"
   from_port         = try(var.settings.port, 1024)
