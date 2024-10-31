@@ -46,7 +46,7 @@ resource "aws_vpc_endpoint" "this" {
   private_dns_enabled = try(var.settings.private_dns, false)
   dns_options {
     dns_record_ip_type                             = try(var.settings.dns_record_ip_type, "service-defined")
-    private_dns_only_for_inbound_resolver_endpoint = try(var.settings.private_resolver, false) ? "enabled" : "disabled"
+    private_dns_only_for_inbound_resolver_endpoint = try(var.settings.private_resolver, false)
   }
 
   tags_all = merge({
