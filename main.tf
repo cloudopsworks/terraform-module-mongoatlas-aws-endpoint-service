@@ -21,7 +21,7 @@ data "mongodbatlas_privatelink_endpoint" "this" {
 
 resource "aws_security_group" "default" {
   vpc_id = var.vpc.vpc_id
-  name   = "mongodb-ep-${local.system_name}"
+  name   = "mongodb-ep-${local.system_name}-sg"
 
   # Egress all
   egress {
@@ -32,7 +32,7 @@ resource "aws_security_group" "default" {
   }
 
   tags = merge({
-    Name = "mongodb-ep-${local.system_name}"
+    Name = "mongodb-ep-${local.system_name}-sg"
   }, local.all_tags)
 }
 
@@ -61,7 +61,7 @@ resource "aws_vpc_endpoint" "this" {
   }
 
   tags = merge({
-    Name = "mongodb-ep-${local.system_name}"
+    Name = "mongodb-ep-${local.system_name}-vpce"
   }, local.all_tags)
 }
 
