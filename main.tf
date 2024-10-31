@@ -34,6 +34,10 @@ resource "aws_security_group" "default" {
   tags = merge({
     Name = "mongodb-ep-${local.system_name}-sg"
   }, local.all_tags)
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_security_group_rule" "default_ingress" {
