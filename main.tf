@@ -44,9 +44,12 @@ resource "aws_vpc_endpoint" "this" {
   subnet_ids          = var.vpc.subnet_ids
   security_group_ids  = concat(local.sglist, [aws_security_group.default.id])
   private_dns_enabled = try(var.settings.private_dns, false)
-  dns_options {
-    dns_record_ip_type                             = try(var.settings.dns_record_ip_type, "service-defined")
-    private_dns_only_for_inbound_resolver_endpoint = try(var.settings.private_resolver, false)
+  dynamic "dns_options" {
+    for_each = length(try(var.settings.options, {})) > 0 ? [var.settings.options] : []
+    content {
+      dns_record_ip_type                             = try(dns_options.values.dns_record_ip_type, "service-defined")
+      private_dns_only_for_inbound_resolver_endpoint = try(dns_options.values.private_resolver, false)
+    }
   }
 
   tags_all = merge({
