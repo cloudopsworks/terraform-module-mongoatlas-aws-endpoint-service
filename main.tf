@@ -23,7 +23,7 @@ resource "aws_security_group" "default" {
   vpc_id = var.vpc.vpc_id
   name   = "mongodb-ep-${local.system_name}"
 
-  tags_all = merge({
+  tags = merge({
     Name = "mongodb-ep-${local.system_name}"
   }, local.all_tags)
 }
@@ -52,7 +52,7 @@ resource "aws_vpc_endpoint" "this" {
     }
   }
 
-  tags_all = merge({
+  tags = merge({
     Name = "mongodb-ep-${local.system_name}"
   }, local.all_tags)
 }
