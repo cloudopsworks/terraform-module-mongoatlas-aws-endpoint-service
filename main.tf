@@ -47,8 +47,8 @@ resource "aws_vpc_endpoint" "this" {
   dynamic "dns_options" {
     for_each = length(try(var.settings.options, {})) > 0 ? [var.settings.options] : []
     content {
-      dns_record_ip_type                             = try(dns_options.values.dns_record_ip_type, "service-defined")
-      private_dns_only_for_inbound_resolver_endpoint = try(dns_options.values.private_resolver, false)
+      dns_record_ip_type                             = try(dns_options.value.dns_record_ip_type, "service-defined")
+      private_dns_only_for_inbound_resolver_endpoint = try(dns_options.value.private_resolver, false)
     }
   }
 
