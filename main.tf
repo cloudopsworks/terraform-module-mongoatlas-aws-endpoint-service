@@ -23,6 +23,14 @@ resource "aws_security_group" "default" {
   vpc_id = var.vpc.vpc_id
   name   = "mongodb-ep-${local.system_name}"
 
+  # Egress all
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = merge({
     Name = "mongodb-ep-${local.system_name}"
   }, local.all_tags)
