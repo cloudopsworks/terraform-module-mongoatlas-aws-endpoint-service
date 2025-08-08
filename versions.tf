@@ -9,10 +9,12 @@ terraform {
   # Complete with required providers for the module
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
+      version = "~> 6.4"
     }
     mongodbatlas = {
-      source = "mongodb/mongodbatlas"
+      source  = "mongodb/mongodbatlas"
+      version = "~> 1.32"
     }
   }
 }
