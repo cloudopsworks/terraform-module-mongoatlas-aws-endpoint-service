@@ -1,4 +1,4 @@
-name: Terraform Transit Gateway Module
+name: Terraform MongoDB Atlas AWS EndPoint Service Setup Module
 #logo: logo/logo.jpg
 
 license: "APACHE2"
@@ -8,23 +8,146 @@ copyrights:
     url: "https://cloudops.works"
     year: "2024"
 
-github_repo: cloudopsworks/terraform-module-aws-vpc-setup
+github_repo: cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
 
 description: |-
-  VPC Module for setting up transit gateway with ResourceAccessMananger support.
+  Terraform module for establishing secure connectivity between AWS VPC and MongoDB Atlas through AWS PrivateLink endpoint service. This module automates the setup and configuration of VPC endpoints, security groups, and MongoDB Atlas private endpoints, ensuring secure and reliable communication between your AWS infrastructure and MongoDB Atlas clusters.
 
 # Introduction to the project
-#introduction: |-
-#  This is an introduction.
+introduction: |-
+  The MongoDB Atlas AWS EndPoint Service Setup Module simplifies the process of creating and managing secure connections between AWS VPC and MongoDB Atlas clusters using AWS PrivateLink. This module handles the complete lifecycle of endpoint services, including:
+
+  - AWS VPC Endpoint Service configuration
+  - MongoDB Atlas Private Endpoint setup
+  - Security group management
+  - Cross-account access configuration
+  - Automated endpoint acceptance and validation
+
+  By using this module, organizations can ensure secure, private network connectivity while maintaining compliance and security best practices.
 
 # How to use this project
-#usage: |-
+usage: |-
+  To use this module, include it in your Terraform configuration with the required variables:
+
+  ```hcl
+  module "mongodbatlas_endpoint" {
+    source = "cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service"
+
+    project_id          = "your-atlas-project-id"
+    region             = "us-east-1"
+    vpc_id             = "vpc-xxxxx"
+    endpoint_region    = "US_EAST_1"
+    private_link_id    = "pl-xxxxx"
+    atlas_vpc_name     = "atlas-vpc"
+    security_group_ids = ["sg-xxxxx"]
+  }
+  ```
+
+  ## Required Variables
+  - project_id: MongoDB Atlas Project ID
+  - region: AWS region for the endpoint
+  - vpc_id: AWS VPC ID
+  - endpoint_region: MongoDB Atlas region code
+  - private_link_id: AWS PrivateLink ID
+  - atlas_vpc_name: Name for the Atlas VPC
+  - security_group_ids: List of security group IDs
+
+  ## Optional Variables
+  - tags: Resource tags (default: {})
+  - endpoint_service_name: Custom endpoint service name
 
 # Example usage
-#examples: |-
+examples: |-
+  ### Basic Terragrunt Configuration
+  ```hcl
+  include {
+    path = find_in_parent_folders()
+  }
+
+  terraform {
+    source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.0.0"
+  }
+
+  inputs = {
+    project_id       = "5f7f8g9h0i1j2k"
+    region          = "us-east-1"
+    vpc_id          = "vpc-0123456789abcdef"
+    endpoint_region = "US_EAST_1"
+    private_link_id = "pl-0123456789abcdef"
+    atlas_vpc_name  = "prod-atlas-vpc"
+    security_group_ids = ["sg-0123456789abcdef"]
+    tags = {
+      Environment = "Production"
+      Project     = "MainApp"
+    }
+  }
+  ```
+
+  ### Multi-Region Setup
+  ```hcl
+  include {
+    path = find_in_parent_folders()
+  }
+
+  terraform {
+    source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.0.0"
+  }
+
+  inputs = {
+    project_id       = "5f7f8g9h0i1j2k"
+    region          = "eu-west-1"
+    vpc_id          = "vpc-0123456789abcdef"
+    endpoint_region = "EU_WEST_1"
+    private_link_id = "pl-0123456789abcdef"
+    atlas_vpc_name  = "eu-atlas-vpc"
+    security_group_ids = ["sg-0123456789abcdef"]
+    tags = {
+      Environment = "Production"
+      Region     = "Europe"
+    }
+  }
+  ```
 
 # How to get started quickly
-#quickstart: |-
+quickstart: |-
+  1. Prerequisites:
+     - AWS account with appropriate permissions
+     - MongoDB Atlas account and project
+     - Terraform >= 1.3
+     - AWS provider ~> 6.4
+     - MongoDB Atlas provider ~> 1.32
+
+  2. Create a new Terraform configuration:
+     ```hcl
+     module "mongodbatlas_endpoint" {
+       source = "cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service"
+
+       project_id          = "your-atlas-project-id"
+       region             = "us-east-1"
+       vpc_id             = "your-vpc-id"
+       endpoint_region    = "US_EAST_1"
+       private_link_id    = "your-privatelink-id"
+       atlas_vpc_name     = "quick-start-vpc"
+       security_group_ids = ["your-security-group-id"]
+     }
+     ```
+
+  3. Initialize Terraform:
+     ```bash
+     terraform init
+     ```
+
+  4. Review the plan:
+     ```bash
+     terraform plan
+     ```
+
+  5. Apply the configuration:
+     ```bash
+     terraform apply
+     ```
+
+  The module will create and configure the necessary AWS and MongoDB Atlas resources for secure connectivity.
 
 include:
   - "docs/targets.md"
