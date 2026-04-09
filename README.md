@@ -8,11 +8,11 @@
   -->
 [![README Header][readme_header_img]][readme_header_link]
 
-[![cloudopsworks][logo]](https://cloudops.works/)
+[![cloudopsworks][logo]](https://cloudopsworks.co/)
 
 # Terraform MongoDB Atlas AWS EndPoint Service Setup Module
 
-
+ [![Latest Release](https://img.shields.io/github/release/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.svg?style=for-the-badge)](https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service/releases/latest) [![Last Updated](https://img.shields.io/github/last-commit/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.svg?style=for-the-badge)](https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service/commits)
 
 
 Terraform module for establishing secure connectivity between AWS VPC and MongoDB Atlas through AWS PrivateLink endpoint service. This module automates the setup and configuration of VPC endpoints, security groups, and MongoDB Atlas private endpoints, ensuring secure and reliable communication between your AWS infrastructure and MongoDB Atlas clusters.
@@ -22,15 +22,10 @@ Terraform module for establishing secure connectivity between AWS VPC and MongoD
 
 This project is part of our comprehensive approach towards DevOps Acceleration. 
 [<img align="right" title="Share via Email" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/ios-mail.svg"/>][share_email]
-[<img align="right" title="Share on Google+" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-googleplus.svg" />][share_googleplus]
 [<img align="right" title="Share on Facebook" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-facebook.svg" />][share_facebook]
 [<img align="right" title="Share on Reddit" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-reddit.svg" />][share_reddit]
 [<img align="right" title="Share on LinkedIn" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-linkedin.svg" />][share_linkedin]
-[<img align="right" title="Share on Twitter" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-twitter.svg" />][share_twitter]
-
-
-[![Terraform Open Source Modules](https://docs.cloudops.works/images/terraform-open-source-modules.svg)][terraform_modules]
-
+[<img align="right" title="Share on X" width="24" height="24" src="https://docs.cloudops.works/images/ionicons/logo-twitter.svg" />][share_twitter]
 
 
 It's 100% Open Source and licensed under the [APACHE2](LICENSE).
@@ -54,7 +49,7 @@ The MongoDB Atlas AWS EndPoint Service Setup Module simplifies the process of cr
 
 - AWS VPC Endpoint Service configuration
 - MongoDB Atlas Private Endpoint setup
-- Security group management
+- Security group management with configurable ingress rules
 - Cross-account access configuration
 - Automated endpoint acceptance and validation
 
@@ -67,125 +62,180 @@ By using this module, organizations can ensure secure, private network connectiv
 Instead pin to the release tag (e.g. `?ref=vX.Y.Z`) of one of our [latest releases](https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service/releases).
 
 
-To use this module, include it in your Terraform configuration with the required variables:
+To use this module, include it in your Terragrunt configuration with the required variables.
+
+The module expects the MongoDB Atlas private link to be provisioned beforehand (via a separate `endpoint` dependency module) and the VPC details to be available (via a `vpc` dependency module).
 
 ```hcl
-module "mongodbatlas_endpoint" {
-  source = "cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service"
+include "root" {
+  path = find_in_parent_folders()
+}
 
-  project_id          = "your-atlas-project-id"
-  region             = "us-east-1"
-  vpc_id             = "vpc-xxxxx"
-  endpoint_region    = "US_EAST_1"
-  private_link_id    = "pl-xxxxx"
-  atlas_vpc_name     = "atlas-vpc"
-  security_group_ids = ["sg-xxxxx"]
+terraform {
+  source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.x.x"
+}
+
+dependency "endpoint" {
+  config_path = "../endpoint"
+}
+
+dependency "vpc" {
+  config_path = "../vpc"
+}
+
+inputs = {
+  # MongoDB Atlas project identification — provide one of project_id or project_name
+  project_id   = ""                                            # (Optional) MongoDB Atlas Project ID; takes precedence over project_name
+  project_name = "my-atlas-project"                           # (Optional) MongoDB Atlas Project Name; used when project_id is not set
+
+  private_link_id = dependency.endpoint.outputs.private_link_id  # (Required) Atlas PrivateLink ID
+
+  vpc = {
+    vpc_id         = dependency.vpc.outputs.vpc_id               # (Required) AWS VPC ID
+    vpc_cidr_block = dependency.vpc.outputs.vpc_cidr_block        # (Required) VPC primary CIDR block
+    subnet_ids     = dependency.vpc.outputs.database_subnet_ids   # (Required) Subnet IDs for endpoint placement
+  }
+
+  settings = {
+    security_group_ids = []           # (Optional) Additional security group IDs; default: []
+    port               = 1024         # (Optional) Ingress TCP start port; default: 1024 (end: 65535)
+    vpc_cidr_blocks    = []           # (Optional) Extra CIDR blocks for ingress; default: []
+    private_dns        = false        # (Optional) Enable private DNS on endpoint; default: false
+    options = {
+      dns_record_ip_type = "service-defined"  # (Optional) DNS record IP type; values: service-defined|ipv4|dualstack|ipv6
+      private_resolver   = false              # (Optional) Private DNS for resolver endpoints only; default: false
+    }
+  }
 }
 ```
 
 ## Required Variables
-- project_id: MongoDB Atlas Project ID
-- region: AWS region for the endpoint
-- vpc_id: AWS VPC ID
-- endpoint_region: MongoDB Atlas region code
-- private_link_id: AWS PrivateLink ID
-- atlas_vpc_name: Name for the Atlas VPC
-- security_group_ids: List of security group IDs
+| Variable | Description |
+|----------|-------------|
+| `private_link_id` | MongoDB Atlas PrivateLink ID from the Atlas endpoint resource |
+| `vpc.vpc_id` | AWS VPC ID where the endpoint will be created |
+| `vpc.vpc_cidr_block` | Primary CIDR block of the VPC |
+| `vpc.subnet_ids` | List of subnet IDs for endpoint network interfaces |
 
 ## Optional Variables
-- tags: Resource tags (default: {})
-- endpoint_service_name: Custom endpoint service name
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `project_id` | `""` | MongoDB Atlas Project ID (overrides `project_name`) |
+| `project_name` | `""` | MongoDB Atlas Project Name (used when `project_id` is empty) |
+| `settings.security_group_ids` | `[]` | Additional security group IDs for the VPC endpoint |
+| `settings.port` | `1024` | Start port for the security group ingress TCP rule (end: 65535) |
+| `settings.vpc_cidr_blocks` | `[]` | Extra CIDR blocks added to the ingress rule |
+| `settings.private_dns` | `false` | Enable private DNS on the VPC endpoint |
+| `settings.options.dns_record_ip_type` | `"service-defined"` | IP type for VPC endpoint DNS records |
+| `settings.options.private_resolver` | `false` | Restrict private DNS to inbound resolver endpoints |
 
 ## Quick Start
 
-1. Prerequisites:
-   - AWS account with appropriate permissions
-   - MongoDB Atlas account and project
+1. **Prerequisites:**
+   - AWS account with permissions to create VPC endpoints and security groups
+   - MongoDB Atlas account with an existing project and PrivateLink endpoint (`mongodbatlas_privatelink_endpoint`)
    - Terraform >= 1.3
    - AWS provider ~> 6.4
-   - MongoDB Atlas provider ~> 1.32
+   - MongoDB Atlas provider ~> 2.1
 
-2. Create a new Terraform configuration:
-   ```hcl
-   module "mongodbatlas_endpoint" {
-     source = "cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service"
+2. **Ensure the PrivateLink endpoint is provisioned** in a separate module/dependency (e.g., `../endpoint`) and the VPC details are available (e.g., `../vpc`).
 
-     project_id          = "your-atlas-project-id"
-     region             = "us-east-1"
-     vpc_id             = "your-vpc-id"
-     endpoint_region    = "US_EAST_1"
-     private_link_id    = "your-privatelink-id"
-     atlas_vpc_name     = "quick-start-vpc"
-     security_group_ids = ["your-security-group-id"]
-   }
-   ```
+3. **Create your Terragrunt configuration** (see the Usage section above) referencing those dependencies.
 
-3. Initialize Terraform:
+4. **Initialize and validate:**
    ```bash
    terraform init
+   terraform validate
    ```
 
-4. Review the plan:
+5. **Review and apply:**
    ```bash
    terraform plan
-   ```
-
-5. Apply the configuration:
-   ```bash
    terraform apply
    ```
 
-The module will create and configure the necessary AWS and MongoDB Atlas resources for secure connectivity.
+The module will create the AWS security group, VPC interface endpoint, and register it with MongoDB Atlas — enabling private connectivity to your Atlas cluster.
 
 
 ## Examples
 
 ### Basic Terragrunt Configuration
+
+Single-region endpoint setup using dependency outputs:
+
 ```hcl
-include {
+include "root" {
   path = find_in_parent_folders()
 }
 
 terraform {
-  source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.0.0"
+  source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.x.x"
+}
+
+dependency "endpoint" {
+  config_path = "../endpoint"
+}
+
+dependency "vpc" {
+  config_path = "../vpc"
 }
 
 inputs = {
-  project_id       = "5f7f8g9h0i1j2k"
-  region          = "us-east-1"
-  vpc_id          = "vpc-0123456789abcdef"
-  endpoint_region = "US_EAST_1"
-  private_link_id = "pl-0123456789abcdef"
-  atlas_vpc_name  = "prod-atlas-vpc"
-  security_group_ids = ["sg-0123456789abcdef"]
-  tags = {
-    Environment = "Production"
-    Project     = "MainApp"
+  project_name    = "prod-atlas-project"
+  private_link_id = dependency.endpoint.outputs.private_link_id
+
+  vpc = {
+    vpc_id         = dependency.vpc.outputs.vpc_id
+    vpc_cidr_block = dependency.vpc.outputs.vpc_cidr_block
+    subnet_ids     = dependency.vpc.outputs.database_subnet_ids
+  }
+
+  settings = {
+    private_dns = true
   }
 }
 ```
 
-### Multi-Region Setup
+### Configuration with Custom Security and DNS Options
+
+Advanced setup with additional security groups and custom DNS settings:
+
 ```hcl
-include {
+include "root" {
   path = find_in_parent_folders()
 }
 
 terraform {
-  source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.0.0"
+  source = "git::https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service.git?ref=v1.x.x"
+}
+
+dependency "endpoint" {
+  config_path = "../endpoint"
+}
+
+dependency "vpc" {
+  config_path = "../vpc"
 }
 
 inputs = {
-  project_id       = "5f7f8g9h0i1j2k"
-  region          = "eu-west-1"
-  vpc_id          = "vpc-0123456789abcdef"
-  endpoint_region = "EU_WEST_1"
-  private_link_id = "pl-0123456789abcdef"
-  atlas_vpc_name  = "eu-atlas-vpc"
-  security_group_ids = ["sg-0123456789abcdef"]
-  tags = {
-    Environment = "Production"
-    Region     = "Europe"
+  project_id      = "5f7f8g9h0i1j2k3l4m5n"
+  private_link_id = dependency.endpoint.outputs.private_link_id
+
+  vpc = {
+    vpc_id         = dependency.vpc.outputs.vpc_id
+    vpc_cidr_block = dependency.vpc.outputs.vpc_cidr_block
+    subnet_ids     = dependency.vpc.outputs.database_subnet_ids
+  }
+
+  settings = {
+    security_group_ids = ["sg-0123456789abcdef0"]
+    port               = 27017
+    vpc_cidr_blocks    = ["10.1.0.0/16", "10.2.0.0/16"]
+    private_dns        = true
+    options = {
+      dns_record_ip_type = "ipv4"
+      private_resolver   = false
+    }
   }
 }
 ```
@@ -199,6 +249,7 @@ Available targets:
   help                                Help screen
   help/all                            Display help for all targets
   help/short                          This help short screen
+  init/%                              Initialize the project for a specific cloud provider: %S
   lint                                Lint terraform/opentofu code
   tag                                 Tag the current version
 
@@ -209,14 +260,14 @@ Available targets:
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.4 |
-| <a name="requirement_mongodbatlas"></a> [mongodbatlas](#requirement\_mongodbatlas) | ~> 1.32 |
+| <a name="requirement_mongodbatlas"></a> [mongodbatlas](#requirement\_mongodbatlas) | ~> 2.1 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.73.0 |
-| <a name="provider_mongodbatlas"></a> [mongodbatlas](#provider\_mongodbatlas) | 1.21.4 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.40.0 |
+| <a name="provider_mongodbatlas"></a> [mongodbatlas](#provider\_mongodbatlas) | 2.10.0 |
 
 ## Modules
 
@@ -243,12 +294,12 @@ Available targets:
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | n/a | `map(string)` | `{}` | no |
 | <a name="input_is_hub"></a> [is\_hub](#input\_is\_hub) | Establish this is a HUB or spoke configuration | `bool` | `false` | no |
 | <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br/>    organization_name = string<br/>    organization_unit = string<br/>    environment_type  = string<br/>    environment_name  = string<br/>  })</pre> | n/a | yes |
-| <a name="input_private_link_id"></a> [private\_link\_id](#input\_private\_link\_id) | The ID of the private link | `string` | n/a | yes |
-| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | (optional) The ID of the project where the cluster will be created | `string` | `""` | no |
-| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | (optional) The name of the project where the cluster will be created | `string` | `""` | no |
-| <a name="input_settings"></a> [settings](#input\_settings) | Settings for the module | `any` | `{}` | no |
+| <a name="input_private_link_id"></a> [private\_link\_id](#input\_private\_link\_id) | (Required) The ID of the MongoDB Atlas PrivateLink endpoint resource. Obtained from the mongodbatlas\_privatelink\_endpoint resource or data source. | `string` | n/a | yes |
+| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | (Optional) The ID of the MongoDB Atlas project where the private endpoint will be registered. Provide either project\_id or project\_name; if both are set, project\_id takes precedence. | `string` | `""` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | (Optional) The name of the MongoDB Atlas project. Used to look up the project\_id when project\_id is not explicitly provided. | `string` | `""` | no |
+| <a name="input_settings"></a> [settings](#input\_settings) | (Optional) Configuration settings for the AWS VPC endpoint and security group.<br/><br/>Supported attributes:<br/>  security\_group\_ids = []          # (Optional) Additional security group IDs to associate with the VPC endpoint. default: []<br/>  port               = 1024        # (Optional) Starting port for the ingress TCP rule on the created security group. default: 1024 (range ends at 65535)<br/>  vpc\_cidr\_blocks    = []          # (Optional) Additional CIDR blocks allowed in the security group ingress rule, besides the VPC CIDR. default: []<br/>  private\_dns        = false       # (Optional) Whether to enable private DNS on the VPC endpoint. default: false<br/>  options = {<br/>    dns\_record\_ip\_type = "service-defined"  # (Optional) IP address type for DNS records. Values: "service-defined", "ipv4", "dualstack", "ipv6". default: "service-defined"<br/>    private\_resolver   = false              # (Optional) Restrict private DNS resolution to inbound resolver endpoints only. default: false<br/>  } | `any` | `{}` | no |
 | <a name="input_spoke_def"></a> [spoke\_def](#input\_spoke\_def) | n/a | `string` | `"001"` | no |
-| <a name="input_vpc"></a> [vpc](#input\_vpc) | The VPC where the cluster will be created | `any` | `{}` | no |
+| <a name="input_vpc"></a> [vpc](#input\_vpc) | (Required) VPC configuration for the AWS VPC endpoint and security group.<br/><br/>Supported attributes:<br/>  vpc\_id         = ""  # (Required) The ID of the AWS VPC where the endpoint will be created.<br/>  vpc\_cidr\_block = ""  # (Required) The primary CIDR block of the VPC; used as an allowed source in the security group ingress rule.<br/>  subnet\_ids     = []  # (Required) List of subnet IDs in which the VPC endpoint network interfaces will be placed. | `any` | `{}` | no |
 
 ## Outputs
 
@@ -268,10 +319,9 @@ Available targets:
 
 File a GitHub [issue](https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service/issues), send us an [email][email] or join our [Slack Community][slack].
 
-[![README Commercial Support][readme_commercial_support_img]][readme_commercial_support_link]
 
 ## DevOps Tools
-
+[]()
 ## Slack Community
 
 
@@ -292,7 +342,7 @@ Please use the [issue tracker](https://github.com/cloudopsworks/terraform-module
 
 ## Copyrights
 
-Copyright © 2024-2025 [Cloud Ops Works LLC](https://cloudops.works)
+Copyright © 2021-2026-2026 [Cloud Ops Works LLC](https://cloudops.works)
 
 
 
@@ -349,32 +399,31 @@ This project is maintained by [Cloud Ops Works LLC][website].
 [![README Footer][readme_footer_img]][readme_footer_link]
 [![Beacon][beacon]][website]
 
-  [logo]: https://cloudops.works/logo-300x69.svg
-  [docs]: https://cowk.io/docs?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=docs
-  [website]: https://cowk.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=website
-  [github]: https://cowk.io/github?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=github
-  [jobs]: https://cowk.io/jobs?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=jobs
-  [hire]: https://cowk.io/hire?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=hire
-  [slack]: https://cowk.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=slack
-  [linkedin]: https://cowk.io/linkedin?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=linkedin
-  [twitter]: https://cowk.io/twitter?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=twitter
-  [testimonial]: https://cowk.io/leave-testimonial?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=testimonial
-  [office_hours]: https://cloudops.works/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=office_hours
-  [newsletter]: https://cowk.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=newsletter
-  [email]: https://cowk.io/email?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=email
-  [commercial_support]: https://cowk.io/commercial-support?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=commercial_support
-  [we_love_open_source]: https://cowk.io/we-love-open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=we_love_open_source
-  [terraform_modules]: https://cowk.io/terraform-modules?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=terraform_modules
-  [readme_header_img]: https://cloudops.works/readme/header/img
-  [readme_header_link]: https://cloudops.works/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_header_link
-  [readme_footer_img]: https://cloudops.works/readme/footer/img
-  [readme_footer_link]: https://cloudops.works/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_footer_link
-  [readme_commercial_support_img]: https://cloudops.works/readme/commercial-support/img
-  [readme_commercial_support_link]: https://cloudops.works/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_commercial_support_link
-  [share_twitter]: https://twitter.com/intent/tweet/?text=Terraform+MongoDB+Atlas+AWS+EndPoint+Service+Setup+Module&url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
+  [logo]: https://cloudopsworks.co/images/main-logo.png
+  [docs]: https://cloudopsworks.co/resources?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=docs
+  [website]: https://cloudopsworks.co?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=website
+  [github]: https://cloudopsworks.co/github?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=github
+  [jobs]: https://cloudopsworks.co/jobs?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=jobs
+  [hire]: https://cloudopsworks.co/hire?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=hire
+  [slack]: https://cloudopsworks.co/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=slack
+  [linkedin]: https://cloudopsworks.co/linkedin?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=linkedin
+  [x]: https://cloudopsworks.co/x?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=x
+  [testimonial]: https://cloudopsworks.co/case-studies?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=testimonial
+  [office_hours]: https://cloudopsworks.co/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=office_hours
+  [newsletter]: https://cloudopsworks.co/resources?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=newsletter
+  [email]: https://cloudopsworks.co/contact?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=email
+  [commercial_support]: https://cloudopsworks.co/services?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=commercial_support
+  [we_love_open_source]: https://cloudopsworks.co/open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=we_love_open_source
+  [terraform_modules]: https://cloudopsworks.co/open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=terraform_modules
+  [readme_header_img]: https://cloudopsworks.co/images/readme-header.png
+  [readme_header_link]: https://cloudopsworks.co/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_header_link
+  [readme_footer_img]: https://cloudopsworks.co/images/main-logo-footer.png
+  [readme_footer_link]: https://cloudopsworks.co/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_footer_link
+  [readme_commercial_support_img]: https://cloudopsworks.co/readme/commercial-support/img
+  [readme_commercial_support_link]: https://cloudopsworks.co/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service&utm_content=readme_commercial_support_link
+  [share_twitter]: https://x.com/intent/tweet/?text=Terraform+MongoDB+Atlas+AWS+EndPoint+Service+Setup+Module&url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_linkedin]: https://www.linkedin.com/shareArticle?mini=true&title=Terraform+MongoDB+Atlas+AWS+EndPoint+Service+Setup+Module&url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_reddit]: https://reddit.com/submit/?url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
-  [share_googleplus]: https://plus.google.com/share?url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_email]: mailto:?subject=Terraform+MongoDB+Atlas+AWS+EndPoint+Service+Setup+Module&body=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
-  [beacon]: https://ga-beacon.cloudops.works/G-7XWMFVFXZT/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service?pixel&cs=github&cm=readme&an=terraform-module-mongoatlas-aws-endpoint-service
+  [beacon]: https://ga-beacon.cloudospworks.co/G-QMZVYYN2VN/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service?pixel&cs=github&cm=readme&an=terraform-module-mongoatlas-aws-endpoint-service
