@@ -42,7 +42,7 @@ provider "mongodbatlas" {
 EOF
 }
 
-{{- if .vpc }}
+{{ if .vpc }}
 dependency "vpc" {
   config_path = "{{ .vpc_path }}"
   #skip_outputs = true
@@ -75,7 +75,7 @@ dependency "vpc" {
     vpc_cidr_block = "1.0.0.0/8"
   }
 }
-{{- end }}
+{{ end }}
 {{- if .endpoint }}
 dependency "endpoint" {
   config_path = "{{ .endpoint_path }}"

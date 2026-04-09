@@ -55,7 +55,7 @@ variables:
     description: "VPC Database Subnet dependecy assignment"
     type: enum
     default: database
-    enum:
+    options:
       - database
       - private
       - intra
