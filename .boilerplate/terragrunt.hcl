@@ -41,7 +41,6 @@ provider "mongodbatlas" {
 }
 EOF
 }
-
 {{ if .vpc }}
 dependency "vpc" {
   config_path = "{{ .vpc_path }}"
