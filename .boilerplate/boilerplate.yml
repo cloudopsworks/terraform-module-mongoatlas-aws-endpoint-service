@@ -14,42 +14,50 @@ variables:
     description: "Is this a hub configuration?"
     type: bool
     default: false
+    confirm: true
   - name: tags
     order: 1
     description: "Tags"
     type: map
     default: {}
+    confirm: true
   # End - Generic Boilerplate Variables Setup
   - name: endpoint
     order: 2
     description: "Atlas Endpoint Dependency is enabled?"
     type: bool
     default: true
+    confirm: true
   - name: endpoint_path
     order: 3
     description: "Atlas Endpoint Path, required if endpoint is true"
     type: string
     default: "../endpoint"
+    confirm: true
   - name: project
     order: 4
     description: "Project Dependency is enabled?"
     type: bool
     default: true
+    confirm: true
   - name: project_path
     order: 5
     description: "Project Path, required if project is true"
     type: string
     default: "../project"
+    confirm: true
   - name: vpc
     order: 6
     description: "VPC Dependency is enabled?"
     type: bool
     default: true
+    confirm: true
   - name: vpc_path
     order: 7
     description: "VPC Path, required if vpc is true"
     type: string
     default: "../vpc"
+    confirm: true
   - name: vpc_subnet_selection
     order: 8
     description: "VPC Database Subnet dependecy assignment"
@@ -59,6 +67,7 @@ variables:
       - database
       - private
       - intra
+    confirm: true
 
 hooks:
   after:

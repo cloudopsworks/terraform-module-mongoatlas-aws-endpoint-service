@@ -266,8 +266,8 @@ Available targets:
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.35 |
-| <a name="provider_mongodbatlas"></a> [mongodbatlas](#provider\_mongodbatlas) | ~> 2.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.40.0 |
+| <a name="provider_mongodbatlas"></a> [mongodbatlas](#provider\_mongodbatlas) | 2.10.0 |
 
 ## Modules
 
@@ -321,21 +321,19 @@ File a GitHub [issue](https://github.com/cloudopsworks/terraform-module-mongoatl
 
 
 ## DevOps Tools
-[]()
+[Our Products](https://cloudopsworks.co/products/)
+[CI/CD Blueprint](https://cloudopsworks.co/cicd-blueprint/)
+[Open Source](https://cloudopsworks.co/open-source/)
+
 ## Slack Community
 
 
 ## Newsletter
-
-## Office Hours
-
-## Contributing
+[Resources Directory](https://cloudopsworks.co/resources/)
 
 ### Bug Reports & Feature Requests
 
 Please use the [issue tracker](https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service/issues) to report any bugs or file feature requests.
-
-### Developing
 
 
 
@@ -426,4 +424,4 @@ This project is maintained by [Cloud Ops Works LLC][website].
   [share_reddit]: https://reddit.com/submit/?url=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
   [share_email]: mailto:?subject=Terraform+MongoDB+Atlas+AWS+EndPoint+Service+Setup+Module&body=https://github.com/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service
-  [beacon]: https://ga-beacon.cloudospworks.co/G-QMZVYYN2VN/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service?pixel&cs=github&cm=readme&an=terraform-module-mongoatlas-aws-endpoint-service
+  [beacon]: https://ga-beacon.cloudopsworks.co/G-QMZVYYN2VN/cloudopsworks/terraform-module-mongoatlas-aws-endpoint-service?pixel&cs=github&cm=readme&an=terraform-module-mongoatlas-aws-endpoint-service
